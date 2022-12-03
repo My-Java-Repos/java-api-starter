@@ -1,0 +1,98 @@
+# Uncomment the entire file and change values inside angular brackets (<>)
+#application:
+#  name: <NAME>
+#  image: link-platform/portal-<SERVICE NAME>
+#  askId: Link Provider
+#plan:
+#  name: jvm-spring
+#  repository: https://github.com/link/naftis-plans
+#pipeline:
+#  codeQuality:
+#    projectKey: com.org.link:<NAME AS PER LINE#3>
+#    projectName: portal-<SERVICE NAME>
+#  deployment:
+#    clusters:
+#      - ocp-ctc-core-nonprod
+#    revisionHistoryLimit: 2
+#    vars:
+#      logLevel: debug
+#      appType: application
+#      envVars:
+#        CONFIG_HOST: config-api-stage.ose-${CLUSTER}.org.com
+#        CONFIG_PROJECT_NAME: <SERVICE NAME>
+#        CONFIG_PROFILE: ${DEPLOY_ENV}
+#      replicas: 1
+#CAPACITY ATTRIBUTES NEEDS TO BE ADJUSTED BASED ON HOW BIG THE PROJECT WIIL BE
+#      capacity:
+#        cpu: 400m
+#        memory: 1152Mi
+#        jvm: 1024m
+#      timeouts:
+#        livelinessDelay: 480
+#        readinessDelay: 420
+#      strategy:
+#        type: Rolling
+#        rollingParams:
+#          maxSurge: 0%
+#          maxUnavailable: 50%
+#    environments:
+#      dev:
+#        namespace: link-nonprod
+#        vars:
+#          replicas: 1
+#          strategy:
+#            rollingParams:
+#              maxUnavailable: 100%
+#          configRoute: config-api-stage
+#          newrelic:
+#            appName: Dev - portal-<SERVICE-NAME>
+#      test:
+#        namespace: link-nonprod
+#        vars:
+#          replicas: 1
+#          strategy:
+#            rollingParams:
+#              maxUnavailable: 100%
+#          configRoute: config-api-stage
+#          newrelic:
+#            appName: Test - portal-<SERVICE-NAME>
+#      stage:
+#        namespace: link-nonprod
+#        vars:
+#          replicas: 1
+#          configRoute: config-api-stage
+#          newrelic:
+#            appName: Stage - portal-<SERVICE-NAME>
+#      prod:
+#        namespace: link-prod
+#        prompt: true
+#        revisionHistoryLimit: 3
+# START - VALUS NEEDS TO BE ADJUSTED BASED ON HOW BIGH THE PROJECT SUPPOSED TO BE
+#        vars:
+#          replicas: 2
+#          capacity:
+#            cpu: 1
+#            jvm: 1536m
+#            jvm: 1792Mi
+# END
+#          timeouts:
+#            livelinessDelay: 480
+#            readinessDelay: 420
+#          configRoute: config-api-prod
+#          newrelic:
+#            appName: Prod - portal-<SERVICE-NAME>
+#          envVars:
+#          CONFIG_HOST: config-api-prod.ose-${CLUSTER}.org.com
+#  pr:
+#    cluster: ocp-ctc-core-nonprod
+#    deployEnv: dev
+#    namespace: link-nonprod
+#    e2e: true
+#    deployValidationPath: /manage/health
+#    vars:
+#      replicas: 1
+#      configRoute: config-api-stage
+#      newrelic:
+#        appName: PR - <SERVICE-NAME>
+#      envVars:
+#        LOG_LEVEL: debug

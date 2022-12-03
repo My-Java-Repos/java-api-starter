@@ -1,0 +1,250 @@
+// buildscript is needed to fetch some items from artifactory for the actual execution of build.gradle (i.e. plugins and such)
+buildscript
+{
+	ext
+	{ springBootVersion = '1.5.8.RELEASE' }
+	repositories
+	{
+		maven
+		{
+			url "${artifactory_contextUrl}/repo"
+			credentials
+			{
+				username = "${artifactory_user}"
+				password = "${artifactory_password}"
+			}
+		}
+	}
+	dependencies
+	{
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+		classpath "org.jfrog.buildinfo:build-info-extractor-gradle:3.1.1"
+		classpath "com.org.link.base:link-gradle:2.0.0-SNAPSHOT"
+		classpath "io.spring.gradle:dependency-management-plugin:1.0.3.RELEASE"
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Establish/apply the plugins needed by this project
+plugins
+{
+	id "groovy"         // enables groovy compilation
+	id "eclipse"        // sets up the project for import into eclipse IDEs
+	id "idea"           // sets up the project for import into intelliJ IDEs
+	id "maven-publish"  // needed for publishing this project's output to artifactory as maven artifacts (i.e. with GAVC addressing)
+	id "com.jfrog.artifactory" version "3.1.1"  // needed for interacting with artifactory
+	id "io.spring.dependency-management" version "1.0.3.RELEASE"        // for dependency management (ie for Dalston)
+	id "org.sonarqube" version "2.0"
+}
+
+apply plugin: 'org.springframework.boot'     // To set this up as a spring boot project.
+apply plugin: 'checkstyle'      // needed for standardized code styling
+apply plugin: 'java'
+apply plugin: "jacoco"
+
+// Configuration for checkstyle plugin
+checkstyle {
+	configFile = new File('src/main/resources/config/checkstyle.xml')
+	ignoreFailures = false
+}
+checkstyleMain.enabled = true
+checkstyleTest.enabled = true
+
+sonarqube {
+	properties {
+		property "sonar.jacoco.reportPath", "${project.buildDir}/jacoco/jacoco.exec"
+		property "sonar.junit.reportsPath", "${project.buildDir}/test-results"
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Project-specific settings
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+// define the project's dependencies
+dependencyManagement {
+	imports {
+		mavenBom "com.org.link.base:link-libraries-dalston-sr4:latest.release"
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:Dalston.SR4"
+		mavenBom 'com.amazonaws:aws-java-sdk-bom:1.10.47'
+	}
+}
+dependencies
+{
+	runtime('mysql:mysql-connector-java')
+
+	// org DEPENDENCIES
+	compile 'com.org.ims.security:ims-security-sdk-spring-boot-starter:1.0.0'
+	compile 'com.org.link.edge:link-keystores'
+	compile 'com.org.link.base:link-logging'
+	compile 'com.org.link.base:link-exception'
+	compile 'com.org.link.base:link-swagger'
+
+	//IDX KEYCLOAK DEPENDENCIES
+	compile 'io.jsonwebtoken:jjwt:0.8.0'
+	compile 'com.org.link.base:idx-jwt:0.0.5'
+
+	// SPRING MANAGED DEPENDENCIES
+	compile 'com.amazonaws:aws-java-sdk-s3'
+	compile 'com.netflix.hystrix:hystrix-javanica'
+	compile 'com.netflix.hystrix:hystrix-metrics-event-stream'
+	compile 'com.netflix.rxjava:rxjava-async-util:0.20.7'
+	compile 'commons-collections:commons-collections'
+	compile 'commons-lang:commons-lang'
+	compile 'io.reactivex:rxjava'
+	compile 'mysql:mysql-connector-java'
+	compile 'org.apache.commons:commons-io:1.3.2'
+	compile 'org.apache.commons:commons-lang3'
+	compile 'org.apache.httpcomponents:httpclient'
+	compile 'org.apache.httpcomponents:httpcore'
+	compile 'org.codehaus.groovy:groovy-all'
+	compile 'org.hibernate:hibernate-ehcache'
+	compile 'org.json:json'
+	compile 'org.springframework.boot:spring-boot-starter-actuator'
+	compile 'org.springframework.boot:spring-boot-starter-data-jpa'
+	compile 'org.springframework.boot:spring-boot-starter-jdbc'
+	compile 'org.springframework.boot:spring-boot-starter-security'
+	compile 'org.springframework.boot:spring-boot-starter-web'
+	compile 'org.springframework.cloud:spring-cloud-context'
+	compile 'org.springframework.cloud:spring-cloud-netflix-core'
+	compile 'org.springframework.cloud:spring-cloud-starter-config'
+	compile 'org.springframework.cloud:spring-cloud-starter-eureka'
+	compile 'org.springframework.cloud:spring-cloud-starter-hystrix'
+	compile 'org.springframework.cloud:spring-cloud-starter-hystrix-dashboard'
+	compile 'org.springframework.security:spring-security-rsa'
+	compile 'org.springframework:spring-context'
+	//compile 'org.togglz:togglz-spring-boot-starter:2.3.0.Final'
+
+	// test dependencies
+	testCompile 'cglib:cglib-nodep:2.2'
+	testCompile 'org.codehaus.groovy:groovy-all'
+	testCompile 'org.codehaus.groovy.modules.http-builder:http-builder:0.5.0'
+	testCompile 'org.spockframework:spock-core'
+	testCompile 'org.spockframework:spock-spring'
+	testCompile 'org.springframework:spring-test'
+	//testCompile "org.togglz:togglz-junit:2.3.0.Final"
+}
+
+////////////////////////////////////////////////////////////////////////
+// Set up publishing.  This plugin needs to be applied AFTER dependencies are defined or they will not be included in the generated POM.
+apply plugin: "com.org.link.base.LinkArtifactory"  // apply link's artifactory/publishing plugin
+
+////////////////////////////////////////////////////////////////////////
+
+// Run all tests with stage profile.
+test {
+	// This only works because tests are executed in a separate JVM.
+	systemProperty 'spring.profiles.active', 'stage'
+	exclude '**/e2e/**'
+
+	jacoco {
+		append = false
+		destinationFile = file("$buildDir/jacoco/jacoco.exec")
+		classDumpFile = file("$buildDir/jacoco/classpathdumps")
+	}
+	finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+	reports {
+		xml.enabled false
+		csv.enabled false
+		html.enabled true
+		html.destination "${buildDir}/jacocoHtml"
+	}
+}
+
+task testE2e(type: Test) {
+	testLogging { showStandardStreams = true }
+	systemProperties = System.properties
+	include '**/e2e/**'
+
+}
+
+////////////////////////////////////////////////////////////////////////
+// Other tasks and configurations
+
+// Run all tests with stage profile.
+test {
+	// This only works because tests are executed in a separate JVM.
+	systemProperty 'spring.profiles.active', 'dev'
+	exclude '**/e2e/**'
+}
+
+// Re-enable if we start using self executing jars or wars.
+bootRepackage
+{ enabled = true }
+
+task pathingJar(type: Jar) {
+	dependsOn configurations.runtime
+	appendix = 'pathing'
+
+	doFirst {
+		manifest {
+			attributes "Class-Path": configurations.runtime.files.collect {
+				it.toURL().toString().replaceFirst('/file:/+/','/')
+			}.join(' ')
+		}
+	}
+}
+
+// for local execution
+bootRun {
+	dependsOn pathingJar
+	systemProperties = System.properties
+	// Make sure we can specify the profile with -Dspring.profiles.active=dev
+	classpath = files("$buildDir/classes/main", "$buildDir/classes/test", "$buildDir/resources/main, pathingJar.archivePath")
+
+	systemProperty 'spring.config.name', 'VALUE_TO_BE_CHANGED' // TODO changes this value per project name
+	systemProperty 'eureka.client.registerWithEureka', 'false' // TODO set this to true to register service with eureka
+
+	if (!System.getenv('SPRING_PROFILES_ACTIVE') && !systemProperties['spring.profiles.active']) {
+		systemProperty 'spring.profiles.active', 'dev,local'
+	}
+	if (!System.getenv('SPRING_CONFIG_LOCATION') && !systemProperties['spring.config.location']) {
+		systemProperty 'spring.config.location', 'classpath:config/link-logging.yml,classpath:config/link-swagger.yml'
+	}
+	if (!System.getenv('LOG_CONSOLE_APPENDER') && !systemProperties['LOG_CONSOLE_APPENDER']) {
+		systemProperty 'LOG_CONSOLE_APPENDER', 'LOCAL_CONSOLE'
+	}
+	if (!System.getenv('LOG_LEVEL') && !systemProperties['LOG_LEVEL']) {
+		systemProperty 'LOG_LEVEL', 'DEBUG'
+	}
+	if (!System.getenv('APP_NAME') && !systemProperties['APP_NAME']) {
+		systemProperty 'APP_NAME', systemProperties['spring.application.name']
+	}
+	if (!System.getenv('CONFIG_HOST') && !systemProperties['CONFIG_HOST']) {
+		systemProperty 'CONFIG_HOST', 'config-api-stage.ose-\${CLUSTER}.org.com'
+	}
+	if (!System.getenv('CONFIG_PROJECT_NAME') && !systemProperties['CONFIG_PROJECT_NAME']) {
+		systemProperty 'CONFIG_PROJECT_NAME', systemProperties['spring.config.name']
+	}
+	if (!System.getenv('DEPLOY_ENV') && !systemProperties['DEPLOY_ENV']) {
+		systemProperty 'DEPLOY_ENV', systemProperties['spring.profiles.active']
+	}
+	classpath = project.sourceSets.test.runtimeClasspath
+}
+
+
+// for local debugging
+task enableDebug {
+	bootRun.jvmArgs = [
+		'-Xdebug',
+		'-Xrunjdwp:server=y,transport=dt_socket,address=3541,suspend=n'
+	]
+}
+bootRun.shouldRunAfter enableDebug
+
+jar { archiveName = 'VALUE_TO_BE_CHANGED.jar' // TODO changes this value per project name
+}
+
+task wrapper(type: Wrapper) { gradleVersion = '2.13' }
+
+task copyDependencies(type: Copy) {
+	from configurations.compile
+	into 'target/dependency'
+}
+
+test.finalizedBy(project.tasks.jacocoTestReport)

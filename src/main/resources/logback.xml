@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <property name="APP_NAME" value="${APP_NAME:-unknownAppName}"/>
+  <property name="HOST" value="${HOSTNAME:-unknownHost}"/>
+  <property name="CLUSTER" value="${CLUSTER:-ctc-dmz}"/>
+  <property name="DEPLOY_ENV" value="${DEPLOY_ENV:-dev}"/>
+  <property name="CONFIG_HOST" value="${CONFIG_HOST:-config-api-stage.ose-${CLUSTER}.org.com}"/>
+  <property name="CONFIG_PROJECT_NAME" value="${CONFIG_PROJECT_NAME:-unknownProject}"/>
+  <property name="CONFIG_PROFILE" value="${CONFIG_PROFILE:-stage}"/>
+  <property name="CONFIG_BRANCH" value="${CONFIG_BRANCH:-master}"/>
+
+  <include url="http://${CONFIG_HOST}/${CONFIG_PROJECT_NAME}/${CONFIG_PROFILE}/${CONFIG_BRANCH}/logConfig.xml"/>
+</configuration>

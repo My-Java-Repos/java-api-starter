@@ -1,0 +1,25 @@
+spring:
+   application:
+     name: java-skeleton-idx
+   cloud:
+     config:
+       failFast: true
+       uri: http://link:l1nk3d1n@config-api-stage.ose-ctc-dmz.org.com/
+
+   sleuth:
+     rxjava:
+      schedulers:
+        hook:
+          enabled: false 
+
+encrypt:
+  keyStore:
+    location: classpath:stores/link-cfg-encryption-nonprod.jks
+    password: IH8myc@r
+    alias: link-config-encryption-np
+    secret: IH8myc@r
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://link-eureka1-dev.ose-elr-dmz.org.com/eureka/,http://link-eureka2-dev.ose-elr-dmz.org.com/eureka/,http://link-eureka1-dev.ose-ctc-dmz.org.com/eureka/,http://link-eureka2-dev.ose-ctc-dmz.org.com/eureka/
