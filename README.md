@@ -25,7 +25,6 @@ If you want to create a new java api within portal:
 7. Replace any instance of "SERVICE-NAME" with the appropriate variable names
 
 ## Link-api-config settings
-1. Clone link-api-config(this is where the settings for your project will go) url,https://github.com/link/link-api-config.git
 2. Checkout out to a separate branch, then copy skeleton folder to another folder and name it same as your app name(the name must match)
 3. To test your code before merging, after pushing your config branch out, in bootstrap.yml replace line (spring.cloud.config.label) with your branch name of link-api-config
     (by default it goes to master branch unless spring.cloud.config.label in the bootstrap.yml is uncommented and keep your branch name here)
